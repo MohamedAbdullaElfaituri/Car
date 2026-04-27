@@ -1,0 +1,25 @@
+{
+  "name": "بوسنينه لخدمات السيارات",
+  "short_name": "بوسنينه",
+  "description": "نظام داخلي لإدارة مغسلة وخدمات السيارات",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "760x220",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
