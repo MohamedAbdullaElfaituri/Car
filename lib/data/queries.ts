@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   auditLogs as mockAuditLogs,
   customers as mockCustomers,
@@ -17,7 +18,7 @@ function hasSupabaseEnv() {
 async function getSupabase() {
   if (!hasSupabaseEnv()) return null;
   try {
-    return await createClient();
+    return createAdminClient() ?? (await createClient());
   } catch {
     return null;
   }

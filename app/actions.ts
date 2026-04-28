@@ -2,12 +2,31 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { customerSchema, serviceSchema, vehicleSchema } from "@/lib/validation";
 
 async function getManagerId() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  return { supabase, managerId: data.user?.id ?? null };
+  const managerId = data.user?.id ?? null;
+  const admin = createAdminClient();
+
+  if (admin && managerId) {
+    const { data: profile } = await admin
+      .from("users")
+      .select("id,role,active")
+      .eq("id", managerId)
+      .eq("role", "manager")
+      .eq("active", true)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (!profile) {
+      throw new Error("Manager profile was not found or is inactive.");
+    }
+  }
+
+  return { supabase: admin ?? supabase, managerId };
 }
 
 function nullableDate(value: FormDataEntryValue | null) {
