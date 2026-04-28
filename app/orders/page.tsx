@@ -3,6 +3,7 @@ import { Card, ConfirmDeleteButton, PrimaryButton, SearchBar, StatusBadge } from
 import { OrderForm } from "@/components/order-form";
 import { getCustomers, getOrders, getServices, getSettings, getVehicles, getWorkers } from "@/lib/data/queries";
 import { formatCurrency, paymentLabels, statusClass, statusLabels } from "@/lib/format";
+import { createOrderAction } from "@/app/actions";
 
 export default async function OrdersPage() {
   const [customers, vehicles, services, workers, orders, settings] = await Promise.all([
@@ -16,7 +17,7 @@ export default async function OrdersPage() {
 
   return (
     <AppShell title="المعاملات / طلبات الغسيل" action={<PrimaryButton>معاملة جديدة واضحة</PrimaryButton>}>
-      <OrderForm customers={customers} vehicles={vehicles} services={services} workers={workers} currency={settings.currency} />
+      <OrderForm customers={customers} vehicles={vehicles} services={services} workers={workers} currency={settings.currency} action={createOrderAction} />
 
       <Card className="mt-6">
         <h2 className="text-lg font-bold">سجل المعاملات</h2>

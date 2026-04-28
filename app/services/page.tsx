@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, ConfirmDeleteButton, Field, inputClass, PrimaryButton, SearchBar, StatusBadge, textareaClass } from "@/components/ui";
 import { getServices, getSettings } from "@/lib/data/queries";
 import { formatCurrency } from "@/lib/format";
+import { createServiceAction } from "@/app/actions";
 
 export default async function ServicesPage() {
   const [services, settings] = await Promise.all([getServices(), getSettings()]);
@@ -51,14 +52,14 @@ export default async function ServicesPage() {
 
         <Card>
           <h2 className="text-lg font-bold">إضافة خدمة</h2>
-          <form className="mt-4 space-y-4">
-            <Field label="اسم الخدمة"><input className={inputClass} placeholder="مثال: غسيل محرك" /></Field>
-            <Field label="السعر"><input className={inputClass} type="number" min="0" placeholder="0" /></Field>
-            <Field label="مدة التنفيذ بالدقائق"><input className={inputClass} type="number" min="1" placeholder="30" /></Field>
+          <form action={createServiceAction} className="mt-4 space-y-4">
+            <Field label="اسم الخدمة"><input name="name" className={inputClass} placeholder="مثال: غسيل محرك" required /></Field>
+            <Field label="السعر"><input name="price" className={inputClass} type="number" min="0" placeholder="0" required /></Field>
+            <Field label="مدة التنفيذ بالدقائق"><input name="durationMinutes" className={inputClass} type="number" min="1" placeholder="30" required /></Field>
             <Field label="الحالة">
-              <select className={inputClass}><option>مفعلة</option><option>غير مفعلة</option></select>
+              <select name="active" className={inputClass}><option value="true">مفعلة</option><option value="false">غير مفعلة</option></select>
             </Field>
-            <Field label="وصف اختياري"><textarea className={textareaClass} /></Field>
+            <Field label="وصف اختياري"><textarea name="description" className={textareaClass} /></Field>
             <button className="h-11 w-full rounded-lg bg-brand-black font-bold text-white">حفظ الخدمة</button>
           </form>
         </Card>

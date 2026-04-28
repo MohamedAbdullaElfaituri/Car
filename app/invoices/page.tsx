@@ -7,6 +7,22 @@ import { formatCurrency, formatDate, paymentLabels, statusLabels } from "@/lib/f
 export default async function InvoicesPage() {
   const [orders, settings] = await Promise.all([getOrders(), getSettings()]);
   const invoice = orders[0];
+
+  if (!invoice) {
+    return (
+      <AppShell title="الفواتير">
+        <Card>
+          <div className="py-16 text-center">
+            <img src={settings.logoUrl ?? "/logo.jpeg"} alt={settings.shopName} className="mx-auto h-20 w-auto rounded-lg object-contain" />
+            <h2 className="mt-6 text-2xl font-bold">لا توجد فواتير بعد</h2>
+            <p className="mt-2 text-zinc-500">أضف أول معاملة غسيل وسيتم إنشاء الفاتورة تلقائياً.</p>
+            <a href="/orders" className="mt-6 inline-flex h-11 items-center rounded-lg bg-brand-red px-5 font-bold text-white">إنشاء معاملة جديدة</a>
+          </div>
+        </Card>
+      </AppShell>
+    );
+  }
+
   const whatsappText = encodeURIComponent(
     `فاتورة ${settings.shopName}\nرقم: ${invoice.invoiceNumber}\nالعميل: ${invoice.customerName}\nالسيارة: ${invoice.plateNumber}\nالإجمالي: ${formatCurrency(invoice.total, settings.currency)}`
   );

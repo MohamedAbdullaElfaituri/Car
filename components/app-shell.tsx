@@ -16,6 +16,7 @@ import {
 import { can, Permission } from "@/lib/permissions";
 import { roleLabels } from "@/lib/format";
 import { Role } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
 
 type StoredUser = {
   id: string;
@@ -36,6 +37,27 @@ const navItems: Array<{ href: string; label: string; icon: React.ComponentType<{
 ];
 
 async function getUser() {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) redirect("/login");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id,full_name,role,active")
+      .eq("id", authData.user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (!profile || profile.role !== "manager" || !profile.active) redirect("/logout");
+
+    return {
+      id: profile.id,
+      name: profile.full_name,
+      role: "manager"
+    } satisfies StoredUser;
+  }
+
   const cookieStore = await cookies();
   const raw = cookieStore.get("bosnina_user")?.value;
   if (!raw) redirect("/login");

@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, ConfirmDeleteButton, Field, inputClass, PrimaryButton, SearchBar, textareaClass } from "@/components/ui";
 import { getCustomers, getVehicles } from "@/lib/data/queries";
+import { createVehicleAction } from "@/app/actions";
 
 export default async function VehiclesPage() {
   const [vehicles, customers] = await Promise.all([getVehicles(), getCustomers()]);
@@ -46,17 +47,17 @@ export default async function VehiclesPage() {
 
         <Card>
           <h2 className="text-lg font-bold">إضافة سيارة</h2>
-          <form className="mt-4 space-y-4">
+          <form action={createVehicleAction} className="mt-4 space-y-4">
             <Field label="العميل">
-              <select className={inputClass}>
-                {customers.map((customer) => <option key={customer.id}>{customer.name}</option>)}
+              <select name="customerId" className={inputClass} required>
+                {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
               </select>
             </Field>
-            <Field label="رقم اللوحة"><input className={inputClass} placeholder="5-123456" /></Field>
-            <Field label="نوع السيارة"><input className={inputClass} placeholder="تويوتا" /></Field>
-            <Field label="الموديل"><input className={inputClass} placeholder="كامري 2022" /></Field>
-            <Field label="اللون"><input className={inputClass} placeholder="أبيض" /></Field>
-            <Field label="ملاحظات"><textarea className={textareaClass} /></Field>
+            <Field label="رقم اللوحة"><input name="plateNumber" className={inputClass} placeholder="5-123456" required /></Field>
+            <Field label="نوع السيارة"><input name="type" className={inputClass} placeholder="تويوتا" required /></Field>
+            <Field label="الموديل"><input name="model" className={inputClass} placeholder="كامري 2022" required /></Field>
+            <Field label="اللون"><input name="color" className={inputClass} placeholder="أبيض" required /></Field>
+            <Field label="ملاحظات"><textarea name="notes" className={textareaClass} /></Field>
             <button className="h-11 w-full rounded-lg bg-brand-black font-bold text-white">حفظ السيارة</button>
           </form>
         </Card>

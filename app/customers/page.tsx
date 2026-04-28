@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, ConfirmDeleteButton, Field, inputClass, PrimaryButton, SearchBar, textareaClass } from "@/components/ui";
 import { getCustomers } from "@/lib/data/queries";
 import { formatDate } from "@/lib/format";
+import { createCustomerAction } from "@/app/actions";
 
 export default async function CustomersPage() {
   const customers = await getCustomers();
@@ -46,10 +47,10 @@ export default async function CustomersPage() {
 
         <Card>
           <h2 className="text-lg font-bold">إضافة عميل سريعاً</h2>
-          <form className="mt-4 space-y-4">
-            <Field label="الاسم"><input className={inputClass} placeholder="اسم العميل" /></Field>
-            <Field label="رقم الهاتف"><input className={inputClass} placeholder="09xxxxxxxx" /></Field>
-            <Field label="ملاحظات"><textarea className={textareaClass} placeholder="ملاحظات اختيارية" /></Field>
+          <form action={createCustomerAction} className="mt-4 space-y-4">
+            <Field label="الاسم"><input name="name" className={inputClass} placeholder="اسم العميل" required /></Field>
+            <Field label="رقم الهاتف"><input name="phone" className={inputClass} placeholder="09xxxxxxxx" required /></Field>
+            <Field label="ملاحظات"><textarea name="notes" className={textareaClass} placeholder="ملاحظات اختيارية" /></Field>
             <button className="h-11 w-full rounded-lg bg-brand-black font-bold text-white">حفظ العميل</button>
           </form>
         </Card>

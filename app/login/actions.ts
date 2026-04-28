@@ -1,22 +1,21 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Role } from "@/lib/types";
-import { users } from "@/lib/data/mock";
+import { createClient } from "@/lib/supabase/server";
 
 export async function loginAction(formData: FormData) {
   const identifier = String(formData.get("identifier") ?? "").trim();
-  const role = "manager" satisfies Role;
-  const user = users.find((item) => item.role === role && item.active) ?? users[0];
-  const cookieStore = await cookies();
+  const password = String(formData.get("password") ?? "");
 
-  cookieStore.set("bosnina_user", JSON.stringify({ id: user.id, name: user.name, role: user.role, identifier }), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: identifier,
+    password
   });
+
+  if (error) {
+    redirect("/login?error=1");
+  }
 
   redirect("/dashboard");
 }

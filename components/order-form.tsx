@@ -11,13 +11,15 @@ export function OrderForm({
   vehicles,
   services,
   workers,
-  currency
+  currency,
+  action
 }: {
   customers: Customer[];
   vehicles: Vehicle[];
   services: Service[];
   workers: AppUser[];
   currency: string;
+  action: (formData: FormData) => void | Promise<void>;
 }) {
   const [selectedCustomer, setSelectedCustomer] = useState(customers[0]?.id ?? "");
   const [selectedVehicle, setSelectedVehicle] = useState(vehicles[0]?.id ?? "");
@@ -42,13 +44,14 @@ export function OrderForm({
   }
 
   return (
-    <form className="grid gap-4 lg:grid-cols-[1fr_360px]">
+    <form action={action} className="grid gap-4 lg:grid-cols-[1fr_360px]">
       <div className="space-y-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-4">
           <h2 className="text-lg font-bold">بيانات العميل والسيارة</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field label="اختيار العميل">
               <select
+                name="customerId"
                 className={inputClass}
                 value={selectedCustomer}
                 onChange={(event) => {
@@ -60,17 +63,17 @@ export function OrderForm({
               </select>
             </Field>
             <Field label="إنشاء عميل سريع">
-              <input className={inputClass} placeholder="اسم ورقم هاتف العميل الجديد" />
+              <input className={inputClass} placeholder="اسم ورقم هاتف العميل الجديد" disabled />
             </Field>
             <Field label="اختيار السيارة">
-              <select className={inputClass} value={selectedVehicle} onChange={(event) => setSelectedVehicle(event.target.value)}>
+              <select name="vehicleId" className={inputClass} value={selectedVehicle} onChange={(event) => setSelectedVehicle(event.target.value)}>
                 {(customerVehicles.length ? customerVehicles : vehicles).map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>{vehicle.plateNumber} - {vehicle.type} {vehicle.model}</option>
                 ))}
               </select>
             </Field>
             <Field label="إنشاء سيارة سريع">
-              <input className={inputClass} placeholder="اللوحة، النوع، اللون" />
+              <input className={inputClass} placeholder="اللوحة، النوع، اللون" disabled />
             </Field>
           </div>
         </div>
@@ -82,6 +85,8 @@ export function OrderForm({
               <label key={service.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 p-3 hover:border-brand-red">
                 <input
                   type="checkbox"
+                  name="serviceIds"
+                  value={service.id}
                   className="mt-1 h-4 w-4 accent-brand-red"
                   checked={serviceIds.includes(service.id)}
                   onChange={() => toggleService(service.id)}
@@ -99,12 +104,12 @@ export function OrderForm({
           <h2 className="text-lg font-bold">تفاصيل المعاملة</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field label="العامل المسؤول">
-              <select className={inputClass}>
+              <select name="workerId" className={inputClass}>
                 {workers.map((worker) => <option key={worker.id} value={worker.id}>{worker.name}</option>)}
               </select>
             </Field>
             <Field label="طريقة الدفع">
-              <select className={inputClass} value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
+              <select name="paymentMethod" className={inputClass} value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
                 <option value="cash">كاش</option>
                 <option value="card">بطاقة</option>
                 <option value="transfer">تحويل</option>
@@ -112,7 +117,7 @@ export function OrderForm({
               </select>
             </Field>
             <Field label="حالة الطلب">
-              <select className={inputClass} value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>
+              <select name="status" className={inputClass} value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>
                 <option value="new">جديد</option>
                 <option value="washing">قيد الغسيل</option>
                 <option value="ready">جاهز</option>
@@ -121,17 +126,17 @@ export function OrderForm({
               </select>
             </Field>
             <Field label="خصم أو تعديل يدوي">
-              <input className={inputClass} type="number" min="0" value={discount} onChange={(event) => setDiscount(Number(event.target.value))} />
+              <input name="discount" className={inputClass} type="number" min="0" value={discount} onChange={(event) => setDiscount(Number(event.target.value))} />
             </Field>
             <Field label="وقت بداية الخدمة">
-              <input className={inputClass} type="datetime-local" />
+              <input name="startedAt" className={inputClass} type="datetime-local" />
             </Field>
             <Field label="وقت نهاية الخدمة">
-              <input className={inputClass} type="datetime-local" />
+              <input name="endedAt" className={inputClass} type="datetime-local" />
             </Field>
             <div className="sm:col-span-2">
               <Field label="ملاحظات">
-                <textarea className={textareaClass} placeholder="أي ملاحظات تظهر في المعاملة والفاتورة" />
+                <textarea name="notes" className={textareaClass} placeholder="أي ملاحظات تظهر في المعاملة والفاتورة" />
               </Field>
             </div>
           </div>
@@ -154,7 +159,7 @@ export function OrderForm({
               <div className="mt-3 flex justify-between text-xl font-bold"><span>الإجمالي</span><span>{formatCurrency(total, currency)}</span></div>
             </div>
           </div>
-          <button type="button" className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-red font-bold text-white">
+          <button type="submit" className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-red font-bold text-white">
             <Save className="h-5 w-5" />
             حفظ المعاملة
           </button>
