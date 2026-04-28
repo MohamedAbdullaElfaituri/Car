@@ -24,7 +24,7 @@ insert into public.settings(
   0,
   'شكراً لاختياركم بوسنينه لخدمات السيارات',
   'السبت - الخميس، 09:00 ص - 10:00 م',
-  '/logo.svg',
+  '/logo.jpeg',
   '#d71920',
   true,
   true

@@ -141,7 +141,7 @@ create table public.settings (
   tax_rate numeric(5,2) not null default 0,
   invoice_footer text,
   working_hours text,
-  logo_url text default '/logo.svg',
+  logo_url text default '/logo.jpeg',
   primary_color text not null default '#d71920',
   calculate_worker_commissions boolean not null default true,
   reports_export_enabled boolean not null default true,

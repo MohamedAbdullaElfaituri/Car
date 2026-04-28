@@ -56,7 +56,7 @@ export async function AppShell({ children, title, action }: { children: React.Re
         <div className="flex h-full flex-col">
           <div className="border-b border-zinc-100 p-5">
             <div className="flex items-center gap-3">
-              <img src="/logo.svg" alt="بوسنينه لخدمات السيارات" className="h-12 w-24 rounded-md object-cover" />
+              <img src="/logo.jpeg" alt="بوسنينه لخدمات السيارات" className="h-12 w-24 rounded-md object-cover" />
               <div>
                 <p className="font-bold">بوسنينه لخدمات السيارات</p>
                 <p className="text-xs text-zinc-500">نظام الإدارة الداخلي</p>
@@ -90,7 +90,7 @@ export async function AppShell({ children, title, action }: { children: React.Re
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
             <div>
               <div className="flex items-center gap-3">
-                <img src="/logo.svg" alt="بوسنينه لخدمات السيارات" className="h-9 w-20 rounded-md object-cover sm:hidden" />
+                <img src="/logo.jpeg" alt="بوسنينه لخدمات السيارات" className="h-9 w-20 rounded-md object-cover sm:hidden" />
                 <p className="text-xs font-semibold text-brand-red">بوسنينه لخدمات السيارات</p>
               </div>
               <h1 className="text-xl font-bold text-brand-black sm:text-2xl">{title}</h1>

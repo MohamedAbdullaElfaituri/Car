@@ -7,7 +7,7 @@ export default function LoginPage() {
       <section className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-8">
         <div className="grid w-full gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
-            <img src="/logo.svg" alt="بوسنينه لخدمات السيارات" className="mb-8 h-20 w-auto" />
+            <img src="/logo.jpeg" alt="بوسنينه لخدمات السيارات" className="mb-8 h-20 w-auto rounded-lg bg-white object-contain p-2" />
             <h1 className="text-3xl font-bold leading-tight sm:text-5xl">بوسنينه لخدمات السيارات</h1>
             <p className="mt-4 max-w-xl text-base leading-8 text-zinc-300">
               نظام داخلي سريع لإدارة العملاء والسيارات والمعاملات والفواتير والتقارير من الهاتف والكمبيوتر.

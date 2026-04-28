@@ -8,7 +8,7 @@ export const settings: Setting = {
   taxRate: 0,
   invoiceFooter: "شكراً لاختياركم بوسنينه لخدمات السيارات",
   workingHours: "السبت - الخميس، 09:00 ص - 10:00 م",
-  logoUrl: "/logo.svg",
+  logoUrl: "/logo.jpeg",
   primaryColor: "#d71920",
   workerCanViewToday: true,
   managerCanExportReports: true

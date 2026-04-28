@@ -33,7 +33,7 @@ export default async function InvoicesPage() {
           <div className="bg-brand-black p-5 text-white sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-5">
               <div className="flex items-center gap-4">
-                <img src={settings.logoUrl ?? "/logo.svg"} alt={settings.shopName} className="h-16 w-40 rounded-lg bg-white object-cover p-1" />
+                <img src={settings.logoUrl ?? "/logo.jpeg"} alt={settings.shopName} className="h-16 w-40 rounded-lg bg-white object-contain p-1" />
                 <div>
                   <h2 className="text-2xl font-bold">{settings.shopName}</h2>
                   <p className="mt-1 text-sm text-white/75">{settings.address}</p>

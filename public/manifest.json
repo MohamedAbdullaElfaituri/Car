@@ -10,9 +10,9 @@
   "lang": "ar",
   "icons": [
     {
-      "src": "/logo.svg",
-      "sizes": "760x220",
-      "type": "image/svg+xml",
+      "src": "/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
