@@ -1,9 +1,17 @@
 import { AppShell } from "@/components/app-shell";
-import { Card, ConfirmDeleteButton, PrimaryButton, SearchBar, StatusBadge } from "@/components/ui";
+import { Card, inputClass, PrimaryButton, SearchBar, StatusBadge, textareaClass } from "@/components/ui";
 import { OrderForm } from "@/components/order-form";
+import { DeleteRecordForm } from "@/components/record-actions";
 import { getCustomers, getOrders, getServices, getSettings, getVehicles, getWorkers } from "@/lib/data/queries";
 import { formatCurrency, paymentLabels, statusClass, statusLabels } from "@/lib/format";
-import { createOrderAction } from "@/app/actions";
+import { createOrderAction, softDeleteAction, updateOrderAction } from "@/app/actions";
+
+function toDateTimeLocal(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 16);
+}
 
 export default async function OrdersPage() {
   const [customers, vehicles, services, workers, orders, settings] = await Promise.all([
@@ -53,7 +61,59 @@ export default async function OrdersPage() {
                   <td className="px-3 py-3">{paymentLabels[order.paymentMethod]}</td>
                   <td className="px-3 py-3"><StatusBadge className={statusClass(order.status)}>{statusLabels[order.status]}</StatusBadge></td>
                   <td className="px-3 py-3 font-bold">{formatCurrency(order.total, settings.currency)}</td>
-                  <td className="px-3 py-3"><div className="flex gap-2"><button className="rounded-lg border border-zinc-200 px-3 py-2 font-semibold">تعديل</button><ConfirmDeleteButton /></div></td>
+                  <td className="px-3 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <a className="rounded-lg border border-zinc-200 px-3 py-2 font-semibold transition hover:bg-zinc-50" href={`/invoices?id=${order.id}`}>الفاتورة</a>
+                      <details className="relative">
+                        <summary className="list-none rounded-lg border border-zinc-200 px-3 py-2 font-semibold transition hover:bg-zinc-50">تعديل</summary>
+                        <form action={updateOrderAction} className="fixed left-4 top-24 z-50 grid max-h-[calc(100vh-7rem)] w-[min(92vw,560px)] overflow-y-auto gap-3 rounded-lg border border-zinc-200 bg-white p-3 text-right shadow-lg sm:grid-cols-2">
+                          <input type="hidden" name="id" value={order.id} />
+                          <select name="customerId" className={inputClass} defaultValue={order.customerId} required>
+                            {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
+                          </select>
+                          <select name="vehicleId" className={inputClass} defaultValue={order.vehicleId} required>
+                            {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.plateNumber} - {vehicle.type} {vehicle.model}</option>)}
+                          </select>
+                          <select name="workerId" className={inputClass} defaultValue={order.workerId} required>
+                            {workers.map((worker) => <option key={worker.id} value={worker.id}>{worker.name}</option>)}
+                          </select>
+                          <select name="paymentMethod" className={inputClass} defaultValue={order.paymentMethod}>
+                            <option value="cash">كاش</option>
+                            <option value="card">بطاقة</option>
+                            <option value="transfer">تحويل</option>
+                            <option value="unpaid">غير مدفوع</option>
+                          </select>
+                          <select name="status" className={inputClass} defaultValue={order.status}>
+                            <option value="new">جديد</option>
+                            <option value="washing">قيد الغسيل</option>
+                            <option value="ready">جاهز</option>
+                            <option value="completed">مكتمل</option>
+                            <option value="cancelled">ملغي</option>
+                          </select>
+                          <input name="discount" className={inputClass} type="number" min="0" step="0.01" defaultValue={order.discount} />
+                          <input name="startedAt" className={inputClass} type="datetime-local" defaultValue={toDateTimeLocal(order.startedAt)} />
+                          <input name="endedAt" className={inputClass} type="datetime-local" defaultValue={toDateTimeLocal(order.endedAt)} />
+                          <div className="sm:col-span-2 grid gap-2 rounded-lg border border-zinc-100 p-2">
+                            {services.filter((service) => service.active || order.services.some((selected) => selected.id === service.id)).map((service) => (
+                              <label key={service.id} className="flex items-center gap-2 text-sm font-semibold">
+                                <input
+                                  type="checkbox"
+                                  name="serviceIds"
+                                  value={service.id}
+                                  defaultChecked={order.services.some((selected) => selected.id === service.id)}
+                                  className="h-4 w-4 accent-brand-red"
+                                />
+                                {service.name} - {formatCurrency(service.price, settings.currency)}
+                              </label>
+                            ))}
+                          </div>
+                          <textarea name="notes" className={`${textareaClass} sm:col-span-2`} defaultValue={order.notes ?? ""} />
+                          <button className="h-10 rounded-lg bg-brand-black font-bold text-white sm:col-span-2">حفظ التعديل</button>
+                        </form>
+                      </details>
+                      <DeleteRecordForm action={softDeleteAction} table="wash_orders" id={order.id} path="/orders" />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -63,3 +123,4 @@ export default async function OrdersPage() {
     </AppShell>
   );
 }
+

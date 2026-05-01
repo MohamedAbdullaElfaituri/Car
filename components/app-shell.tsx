@@ -1,18 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  BarChart3,
-  Car,
-  ClipboardList,
-  FileText,
-  Home,
-  LogOut,
-  Settings,
-  Sparkles,
-  Users,
-  Wrench
-} from "lucide-react";
+import { BarChart3, ClipboardList, FileText, Home, LogOut, Settings, Sparkles, Wrench } from "lucide-react";
 import { can, Permission } from "@/lib/permissions";
 import { roleLabels } from "@/lib/format";
 import { Role } from "@/lib/types";
@@ -28,8 +17,6 @@ type StoredUser = {
 const navItems: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }>; permission: Permission }> = [
   { href: "/dashboard", label: "لوحة التحكم", icon: Home, permission: "dashboard:view" },
   { href: "/orders", label: "المعاملات", icon: ClipboardList, permission: "orders:create" },
-  { href: "/customers", label: "العملاء", icon: Users, permission: "customers:manage" },
-  { href: "/vehicles", label: "السيارات", icon: Car, permission: "vehicles:manage" },
   { href: "/services", label: "الخدمات والأسعار", icon: Sparkles, permission: "services:manage" },
   { href: "/invoices", label: "الفواتير", icon: FileText, permission: "invoices:manage" },
   { href: "/reports", label: "التقارير", icon: BarChart3, permission: "reports:view" },
@@ -64,9 +51,7 @@ async function getUser() {
   const raw = cookieStore.get("bosnina_user")?.value;
   if (!raw) redirect("/login");
   const user = JSON.parse(raw) as StoredUser;
-  if (user.role !== "manager") {
-    redirect("/logout");
-  }
+  if (user.role !== "manager") redirect("/logout");
   return user;
 }
 
@@ -91,7 +76,7 @@ export async function AppShell({ children, title, action }: { children: React.Re
             {items.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">
+                <Link key={item.href} href={item.href} prefetch className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">
                   <Icon className="h-5 w-5 text-brand-red" />
                   {item.label}
                 </Link>
@@ -123,7 +108,7 @@ export async function AppShell({ children, title, action }: { children: React.Re
           </div>
           <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pb-3 lg:hidden">
             {items.map((item) => (
-              <Link key={item.href} href={item.href} className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700">
+              <Link key={item.href} href={item.href} prefetch className="shrink-0 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700">
                 {item.label}
               </Link>
             ))}

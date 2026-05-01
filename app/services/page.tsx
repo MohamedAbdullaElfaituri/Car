@@ -1,9 +1,10 @@
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Card, ConfirmDeleteButton, Field, inputClass, PrimaryButton, SearchBar, StatusBadge, textareaClass } from "@/components/ui";
+import { Card, Field, inputClass, PrimaryButton, SearchBar, StatusBadge, textareaClass } from "@/components/ui";
+import { DeleteRecordForm } from "@/components/record-actions";
 import { getServices, getSettings } from "@/lib/data/queries";
 import { formatCurrency } from "@/lib/format";
-import { createServiceAction } from "@/app/actions";
+import { createServiceAction, softDeleteAction, updateServiceAction } from "@/app/actions";
 
 export default async function ServicesPage() {
   const [services, settings] = await Promise.all([getServices(), getSettings()]);
@@ -39,8 +40,22 @@ export default async function ServicesPage() {
                     <td className="px-3 py-3 text-zinc-500">{service.description ?? "-"}</td>
                     <td className="px-3 py-3">
                       <div className="flex gap-2">
-                        <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold">تعديل</button>
-                        <ConfirmDeleteButton />
+                        <details className="relative">
+                          <summary className="list-none rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold transition hover:bg-zinc-50">تعديل</summary>
+                          <form action={updateServiceAction} className="fixed left-4 top-24 z-50 max-h-[calc(100vh-7rem)] w-[min(92vw,380px)] overflow-y-auto space-y-3 rounded-lg border border-zinc-200 bg-white p-3 text-right shadow-lg">
+                            <input type="hidden" name="id" value={service.id} />
+                            <input name="name" className={inputClass} defaultValue={service.name} required />
+                            <input name="price" className={inputClass} type="number" min="0" step="0.01" defaultValue={service.price} required />
+                            <input name="durationMinutes" className={inputClass} type="number" min="1" defaultValue={service.durationMinutes} required />
+                            <select name="active" className={inputClass} defaultValue={String(service.active)}>
+                              <option value="true">مفعلة</option>
+                              <option value="false">غير مفعلة</option>
+                            </select>
+                            <textarea name="description" className={textareaClass} defaultValue={service.description ?? ""} />
+                            <button className="h-10 w-full rounded-lg bg-brand-black font-bold text-white">حفظ التعديل</button>
+                          </form>
+                        </details>
+                        <DeleteRecordForm action={softDeleteAction} table="services" id={service.id} path="/services" />
                       </div>
                     </td>
                   </tr>
@@ -67,3 +82,4 @@ export default async function ServicesPage() {
     </AppShell>
   );
 }
+

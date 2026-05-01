@@ -25,11 +25,37 @@ textarea {
 }
 
 @media print {
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
   .no-print {
     display: none !important;
   }
 
   body {
     background: #ffffff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .print-area table {
+    min-width: 0 !important;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
+import Link from "next/link";
 
 type CardProps = React.ComponentPropsWithoutRef<"section">;
 
@@ -29,9 +30,9 @@ export function SearchBar({ placeholder }: { placeholder: string }) {
 export function PrimaryButton({ children, href }: { children: React.ReactNode; href?: string }) {
   if (href) {
     return (
-      <a href={href} className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-red px-4 text-sm font-bold text-white transition hover:bg-red-700">
+      <Link href={href} className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-red px-4 text-sm font-bold text-white transition hover:bg-red-700">
         {children}
-      </a>
+      </Link>
     );
   }
   return <button className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-red px-4 text-sm font-bold text-white transition hover:bg-red-700">{children}</button>;

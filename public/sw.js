@@ -1,5 +1,5 @@
-const CACHE_NAME = "bosnina-v1";
-const APP_SHELL = ["/", "/dashboard", "/manifest.json", "/icon.svg"];
+const CACHE_NAME = "bosnina-v2";
+const APP_SHELL = ["/manifest.json", "/icon.svg", "/logo.jpeg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -16,7 +16,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith("/_next/")) return;
+  const isStaticAsset = url.pathname.startsWith("/_next/static/") || APP_SHELL.includes(url.pathname);
+  if (!isStaticAsset) return;
 
   event.respondWith(
     fetch(event.request)
@@ -25,6 +26,6 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
       })
-      .catch(() => caches.match(event.request).then((response) => response || caches.match("/dashboard")))
+      .catch(() => caches.match(event.request))
   );
 });

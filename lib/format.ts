@@ -1,7 +1,19 @@
 import { OrderStatus, PaymentMethod, Role } from "@/lib/types";
 
+export function normalizeArabicText(value: unknown, fallback = "") {
+  const text = String(value ?? fallback);
+  if (!/[ØÙÂâ]/.test(text)) return text;
+
+  try {
+    const bytes = Uint8Array.from(Array.from(text, (char) => char.charCodeAt(0) & 0xff));
+    return new TextDecoder("utf-8").decode(bytes).replace(/Â·/g, "·").replace(/â€¢/g, "•");
+  } catch {
+    return text;
+  }
+}
+
 export function formatCurrency(value: number, currency = "د.ل") {
-  return `${value.toLocaleString("ar-LY", { maximumFractionDigits: 2 })} ${currency}`;
+  return `${value.toLocaleString("ar-LY", { maximumFractionDigits: 2 })} ${normalizeArabicText(currency, "د.ل")}`;
 }
 
 export function formatDate(value: string) {

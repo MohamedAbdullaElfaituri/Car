@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MessageCircle, Printer, Save } from "lucide-react";
-import { Customer, Service, Vehicle, AppUser, PaymentMethod, OrderStatus } from "@/lib/types";
+import { FileText, MessageCircle, Save } from "lucide-react";
+import Link from "next/link";
+import { AppUser, Customer, OrderStatus, PaymentMethod, Service, Vehicle } from "@/lib/types";
 import { Field, inputClass, textareaClass } from "@/components/ui";
 import { formatCurrency } from "@/lib/format";
 
@@ -21,26 +22,54 @@ export function OrderForm({
   currency: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
-  const [selectedCustomer, setSelectedCustomer] = useState(customers[0]?.id ?? "");
-  const [selectedVehicle, setSelectedVehicle] = useState(vehicles[0]?.id ?? "");
-  const [serviceIds, setServiceIds] = useState<string[]>([services[2]?.id].filter(Boolean));
+  const firstServiceId = services.find((service) => service.active)?.id;
+  const [serviceIds, setServiceIds] = useState<string[]>(firstServiceId ? [firstServiceId] : []);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [status, setStatus] = useState<OrderStatus>("new");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [plateNumber, setPlateNumber] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
 
-  const customerVehicles = vehicles.filter((vehicle) => vehicle.customerId === selectedCustomer);
   const selectedServices = services.filter((service) => serviceIds.includes(service.id));
   const subtotal = selectedServices.reduce((sum, service) => sum + service.price, 0);
-  const total = Math.max(subtotal - discount, 0);
+  const safeDiscount = Math.min(Math.max(discount, 0), subtotal);
+  const total = Math.max(subtotal - safeDiscount, 0);
+
+  const customerSuggestions = customers.slice(0, 50);
+  const vehicleSuggestions = vehicles.slice(0, 50);
 
   const whatsappText = useMemo(() => {
-    const customer = customers.find((item) => item.id === selectedCustomer);
-    const vehicle = vehicles.find((item) => item.id === selectedVehicle);
-    return encodeURIComponent(`فاتورة بوسنينه لخدمات السيارات\nالعميل: ${customer?.name ?? ""}\nالسيارة: ${vehicle?.plateNumber ?? ""}\nالإجمالي: ${formatCurrency(total, currency)}`);
-  }, [currency, customers, selectedCustomer, selectedVehicle, total, vehicles]);
+    return encodeURIComponent(
+      `فاتورة خدمات السيارات\nالعميل: ${customerName}\nالسيارة: ${plateNumber}\nالإجمالي: ${formatCurrency(total, currency)}`
+    );
+  }, [currency, customerName, plateNumber, total]);
 
   function toggleService(id: string) {
     setServiceIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  function fillCustomerByPhone(phone: string) {
+    setCustomerPhone(phone);
+    const customer = customers.find((item) => item.phone === phone);
+    if (customer) setCustomerName(customer.name);
+  }
+
+  function fillVehicleByPlate(plate: string) {
+    setPlateNumber(plate);
+    const vehicle = vehicles.find((item) => item.plateNumber === plate);
+    if (!vehicle) return;
+    setVehicleType(vehicle.type);
+    setVehicleModel(vehicle.model);
+    setVehicleColor(vehicle.color);
+    const customer = customers.find((item) => item.id === vehicle.customerId);
+    if (customer) {
+      setCustomerName(customer.name);
+      setCustomerPhone(customer.phone);
+    }
   }
 
   return (
@@ -49,31 +78,51 @@ export function OrderForm({
         <div className="rounded-lg border border-zinc-200 bg-white p-4">
           <h2 className="text-lg font-bold">بيانات العميل والسيارة</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label="اختيار العميل">
-              <select
-                name="customerId"
+            <Field label="اسم العميل">
+              <input name="customerName" className={inputClass} value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="اسم العميل" required />
+            </Field>
+            <Field label="رقم الهاتف">
+              <input
+                name="customerPhone"
                 className={inputClass}
-                value={selectedCustomer}
-                onChange={(event) => {
-                  setSelectedCustomer(event.target.value);
-                  setSelectedVehicle(vehicles.find((vehicle) => vehicle.customerId === event.target.value)?.id ?? "");
-                }}
-              >
-                {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} - {customer.phone}</option>)}
-              </select>
+                value={customerPhone}
+                onChange={(event) => fillCustomerByPhone(event.target.value)}
+                placeholder="09xxxxxxxx"
+                list="customer-phone-list"
+                required
+              />
+              <datalist id="customer-phone-list">
+                {customerSuggestions.map((customer) => <option key={customer.id} value={customer.phone}>{customer.name}</option>)}
+              </datalist>
             </Field>
-            <Field label="إنشاء عميل سريع">
-              <input className={inputClass} placeholder="اسم ورقم هاتف العميل الجديد" disabled />
+            <Field label="رقم اللوحة">
+              <input
+                name="plateNumber"
+                className={inputClass}
+                value={plateNumber}
+                onChange={(event) => fillVehicleByPlate(event.target.value)}
+                placeholder="5-123456"
+                list="vehicle-plate-list"
+                required
+              />
+              <datalist id="vehicle-plate-list">
+                {vehicleSuggestions.map((vehicle) => <option key={vehicle.id} value={vehicle.plateNumber}>{vehicle.customerName}</option>)}
+              </datalist>
             </Field>
-            <Field label="اختيار السيارة">
-              <select name="vehicleId" className={inputClass} value={selectedVehicle} onChange={(event) => setSelectedVehicle(event.target.value)}>
-                {(customerVehicles.length ? customerVehicles : vehicles).map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>{vehicle.plateNumber} - {vehicle.type} {vehicle.model}</option>
-                ))}
-              </select>
+            <Field label="نوع السيارة">
+              <input name="vehicleType" className={inputClass} value={vehicleType} onChange={(event) => setVehicleType(event.target.value)} placeholder="تويوتا" required />
             </Field>
-            <Field label="إنشاء سيارة سريع">
-              <input className={inputClass} placeholder="اللوحة، النوع، اللون" disabled />
+            <Field label="الموديل">
+              <input name="vehicleModel" className={inputClass} value={vehicleModel} onChange={(event) => setVehicleModel(event.target.value)} placeholder="كامري 2022" required />
+            </Field>
+            <Field label="اللون">
+              <input name="vehicleColor" className={inputClass} value={vehicleColor} onChange={(event) => setVehicleColor(event.target.value)} placeholder="أبيض" required />
+            </Field>
+            <Field label="ملاحظات العميل">
+              <textarea name="customerNotes" className={textareaClass} placeholder="اختياري" />
+            </Field>
+            <Field label="ملاحظات السيارة">
+              <textarea name="vehicleNotes" className={textareaClass} placeholder="اختياري" />
             </Field>
           </div>
         </div>
@@ -82,7 +131,7 @@ export function OrderForm({
           <h2 className="text-lg font-bold">الخدمات المختارة</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {services.filter((service) => service.active).map((service) => (
-              <label key={service.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 p-3 hover:border-brand-red">
+              <label key={service.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 p-3 transition hover:border-brand-red">
                 <input
                   type="checkbox"
                   name="serviceIds"
@@ -104,7 +153,7 @@ export function OrderForm({
           <h2 className="text-lg font-bold">تفاصيل المعاملة</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field label="العامل المسؤول">
-              <select name="workerId" className={inputClass}>
+              <select name="workerId" className={inputClass} required>
                 {workers.map((worker) => <option key={worker.id} value={worker.id}>{worker.name}</option>)}
               </select>
             </Field>
@@ -125,7 +174,7 @@ export function OrderForm({
                 <option value="cancelled">ملغي</option>
               </select>
             </Field>
-            <Field label="خصم أو تعديل يدوي">
+            <Field label="الخصم">
               <input name="discount" className={inputClass} type="number" min="0" value={discount} onChange={(event) => setDiscount(Number(event.target.value))} />
             </Field>
             <Field label="وقت بداية الخدمة">
@@ -135,7 +184,7 @@ export function OrderForm({
               <input name="endedAt" className={inputClass} type="datetime-local" />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="ملاحظات">
+              <Field label="ملاحظات الفاتورة">
                 <textarea name="notes" className={textareaClass} placeholder="أي ملاحظات تظهر في المعاملة والفاتورة" />
               </Field>
             </div>
@@ -147,26 +196,26 @@ export function OrderForm({
         <div className="sticky top-28 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-bold">ملخص السعر</h2>
           <div className="mt-4 space-y-3">
-            {selectedServices.map((service) => (
+            {selectedServices.length ? selectedServices.map((service) => (
               <div key={service.id} className="flex justify-between gap-3 text-sm">
                 <span>{service.name}</span>
                 <span className="font-bold">{formatCurrency(service.price, currency)}</span>
               </div>
-            ))}
+            )) : <p className="text-sm text-zinc-500">اختر خدمة واحدة على الأقل</p>}
             <div className="border-t border-zinc-100 pt-3 text-sm">
               <div className="flex justify-between"><span>الإجمالي قبل الخصم</span><span>{formatCurrency(subtotal, currency)}</span></div>
-              <div className="mt-2 flex justify-between text-red-700"><span>الخصم</span><span>{formatCurrency(discount, currency)}</span></div>
+              <div className="mt-2 flex justify-between text-red-700"><span>الخصم</span><span>{formatCurrency(safeDiscount, currency)}</span></div>
               <div className="mt-3 flex justify-between text-xl font-bold"><span>الإجمالي</span><span>{formatCurrency(total, currency)}</span></div>
             </div>
           </div>
-          <button type="submit" className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-red font-bold text-white">
+          <button type="submit" className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-red font-bold text-white transition hover:bg-red-700">
             <Save className="h-5 w-5" />
             حفظ المعاملة
           </button>
-          <button type="button" onClick={() => window.print()} className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 font-bold">
-            <Printer className="h-5 w-5" />
-            طباعة فاتورة
-          </button>
+          <Link href="/invoices" className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 font-bold">
+            <FileText className="h-5 w-5" />
+            عرض الفواتير
+          </Link>
           <a href={`https://wa.me/?text=${whatsappText}`} target="_blank" className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 font-bold text-emerald-700">
             <MessageCircle className="h-5 w-5" />
             مشاركة واتساب

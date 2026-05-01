@@ -9,6 +9,7 @@ import {
   users as mockUsers,
   vehicles as mockVehicles
 } from "@/lib/data/mock";
+import { normalizeArabicText } from "@/lib/format";
 import { AppUser, AuditLog, Customer, OrderStatus, PaymentMethod, Service, Setting, Vehicle, WashOrder } from "@/lib/types";
 
 function hasSupabaseEnv() {
@@ -24,16 +25,24 @@ async function getSupabase() {
   }
 }
 
+function text(value: unknown, fallback = "") {
+  return normalizeArabicText(value, fallback);
+}
+
+function visible<T extends { deletedAt?: string | null }>(items: T[]) {
+  return items.filter((item) => !item.deletedAt);
+}
+
 function mapSettings(row: any): Setting {
   return {
-    shopName: row.shop_name,
-    phone: row.phone ?? "",
-    address: row.address ?? "",
-    currency: row.currency ?? "د.ل",
+    shopName: text(row.shop_name),
+    phone: text(row.phone),
+    address: text(row.address),
+    currency: text(row.currency, "د.ل"),
     taxRate: Number(row.tax_rate ?? 0),
-    invoiceFooter: row.invoice_footer ?? "",
-    workingHours: row.working_hours ?? "",
-    logoUrl: row.logo_url ?? "/logo.jpeg",
+    invoiceFooter: text(row.invoice_footer),
+    workingHours: text(row.working_hours),
+    logoUrl: text(row.logo_url, "/logo.jpeg"),
     primaryColor: row.primary_color ?? "#d71920",
     workerCanViewToday: Boolean(row.calculate_worker_commissions ?? true),
     managerCanExportReports: Boolean(row.reports_export_enabled ?? true)
@@ -42,7 +51,7 @@ function mapSettings(row: any): Setting {
 
 export async function getCustomers(): Promise<Customer[]> {
   const supabase = await getSupabase();
-  if (!supabase) return mockCustomers.filter((customer) => !customer.deletedAt);
+  if (!supabase) return visible(mockCustomers);
 
   const { data, error } = await supabase
     .from("customers")
@@ -50,13 +59,13 @@ export async function getCustomers(): Promise<Customer[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return mockCustomers.filter((customer) => !customer.deletedAt);
+  if (error || !data) return visible(mockCustomers);
 
   return data.map((row: any) => ({
     id: row.id,
-    name: row.name,
-    phone: row.phone,
-    notes: row.notes ?? undefined,
+    name: text(row.name),
+    phone: text(row.phone),
+    notes: row.notes ? text(row.notes) : undefined,
     createdAt: row.created_at,
     deletedAt: row.deleted_at
   }));
@@ -64,7 +73,7 @@ export async function getCustomers(): Promise<Customer[]> {
 
 export async function getVehicles(): Promise<Vehicle[]> {
   const supabase = await getSupabase();
-  if (!supabase) return mockVehicles.filter((vehicle) => !vehicle.deletedAt);
+  if (!supabase) return visible(mockVehicles);
 
   const { data, error } = await supabase
     .from("vehicles")
@@ -72,24 +81,24 @@ export async function getVehicles(): Promise<Vehicle[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return mockVehicles.filter((vehicle) => !vehicle.deletedAt);
+  if (error || !data) return visible(mockVehicles);
 
   return data.map((row: any) => ({
     id: row.id,
     customerId: row.customer_id,
-    customerName: row.customers?.name ?? "عميل",
-    plateNumber: row.plate_number,
-    type: row.vehicle_type,
-    model: row.vehicle_model,
-    color: row.color,
-    notes: row.notes ?? undefined,
+    customerName: text(row.customers?.name, "عميل"),
+    plateNumber: text(row.plate_number),
+    type: text(row.vehicle_type),
+    model: text(row.vehicle_model),
+    color: text(row.color),
+    notes: row.notes ? text(row.notes) : undefined,
     deletedAt: row.deleted_at
   }));
 }
 
 export async function getServices(): Promise<Service[]> {
   const supabase = await getSupabase();
-  if (!supabase) return mockServices.filter((service) => !service.deletedAt);
+  if (!supabase) return visible(mockServices);
 
   const { data, error } = await supabase
     .from("services")
@@ -97,15 +106,15 @@ export async function getServices(): Promise<Service[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return mockServices.filter((service) => !service.deletedAt);
+  if (error || !data) return visible(mockServices);
 
   return data.map((row: any) => ({
     id: row.id,
-    name: row.name,
+    name: text(row.name),
     price: Number(row.price ?? 0),
     durationMinutes: Number(row.duration_minutes ?? 0),
     active: Boolean(row.active),
-    description: row.description ?? undefined,
+    description: row.description ? text(row.description) : undefined,
     soldCount: 0,
     deletedAt: row.deleted_at
   }));
@@ -126,8 +135,8 @@ export async function getWorkers(): Promise<AppUser[]> {
     const relatedOrders = (workerOrders ?? []).filter((order: any) => order.worker_id === row.id);
     return {
       id: row.id,
-      name: row.name,
-      phone: row.phone ?? "",
+      name: text(row.name),
+      phone: text(row.phone),
       email: "",
       role: "worker",
       active: Boolean(row.active),
@@ -140,7 +149,7 @@ export async function getWorkers(): Promise<AppUser[]> {
 
 export async function getOrders(): Promise<WashOrder[]> {
   const supabase = await getSupabase();
-  if (!supabase) return mockOrders.filter((order) => !order.deletedAt);
+  if (!supabase) return visible(mockOrders);
 
   const { data, error } = await supabase
     .from("wash_orders")
@@ -156,20 +165,20 @@ export async function getOrders(): Promise<WashOrder[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return mockOrders.filter((order) => !order.deletedAt);
+  if (error || !data) return visible(mockOrders);
 
   return data.map((row: any) => ({
     id: row.id,
     invoiceNumber: row.invoice_number,
     customerId: row.customer_id,
-    customerName: row.customers?.name ?? "عميل",
-    customerPhone: row.customers?.phone ?? "",
+    customerName: text(row.customers?.name, "عميل"),
+    customerPhone: text(row.customers?.phone),
     vehicleId: row.vehicle_id,
-    plateNumber: row.vehicles?.plate_number ?? "",
-    vehicleLabel: `${row.vehicles?.vehicle_type ?? ""} ${row.vehicles?.vehicle_model ?? ""}`.trim(),
+    plateNumber: text(row.vehicles?.plate_number),
+    vehicleLabel: text(`${row.vehicles?.vehicle_type ?? ""} ${row.vehicles?.vehicle_model ?? ""}`.trim()),
     services: (row.wash_order_services ?? []).map((service: any) => ({
       id: service.service_id ?? service.id,
-      name: service.service_name,
+      name: text(service.service_name),
       price: Number(service.price ?? 0),
       durationMinutes: Number(service.duration_minutes ?? 0),
       active: true,
@@ -179,12 +188,12 @@ export async function getOrders(): Promise<WashOrder[]> {
     discount: Number(row.discount ?? 0),
     total: Number(row.total ?? 0),
     workerId: row.worker_id ?? "",
-    workerName: row.workers?.name ?? "",
+    workerName: text(row.workers?.name),
     paymentMethod: row.payment_method,
     status: row.status,
     startedAt: row.started_at ?? row.created_at,
     endedAt: row.ended_at ?? undefined,
-    notes: row.notes ?? undefined,
+    notes: row.notes ? text(row.notes) : undefined,
     createdAt: row.created_at,
     deletedAt: row.deleted_at
   }));
@@ -213,9 +222,9 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
 
   return data.map((row: any) => ({
     id: row.id,
-    userName: row.user_name ?? "المدير",
-    action: row.action,
-    entity: row.entity,
+    userName: text(row.user_name, "المدير"),
+    action: text(row.action),
+    entity: text(row.entity),
     entityId: row.entity_id ?? "",
     createdAt: row.created_at
   }));

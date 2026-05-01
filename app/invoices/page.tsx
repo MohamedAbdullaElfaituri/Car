@@ -4,9 +4,14 @@ import { Card, SearchBar } from "@/components/ui";
 import { getOrders, getSettings } from "@/lib/data/queries";
 import { formatCurrency, formatDate, paymentLabels, statusLabels } from "@/lib/format";
 
-export default async function InvoicesPage() {
+type InvoicesPageProps = {
+  searchParams?: Promise<{ id?: string }>;
+};
+
+export default async function InvoicesPage({ searchParams }: InvoicesPageProps) {
+  const params = await searchParams;
   const [orders, settings] = await Promise.all([getOrders(), getSettings()]);
-  const invoice = orders[0];
+  const invoice = orders.find((order) => order.id === params?.id) ?? orders[0];
 
   if (!invoice) {
     return (
@@ -34,7 +39,7 @@ export default async function InvoicesPage() {
           <SearchBar placeholder="بحث برقم الفاتورة أو اسم العميل" />
           <div className="mt-4 space-y-2">
             {orders.map((order) => (
-              <a key={order.id} href="#invoice" className="block rounded-lg border border-zinc-200 p-3 transition hover:border-brand-red hover:bg-red-50">
+              <a key={order.id} href={`/invoices?id=${order.id}#invoice`} className={`block rounded-lg border p-3 transition hover:border-brand-red hover:bg-red-50 ${order.id === invoice.id ? "border-brand-red bg-red-50" : "border-zinc-200"}`}>
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-bold">{order.invoiceNumber}</p>
                   <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-bold">{statusLabels[order.status]}</span>
@@ -45,7 +50,7 @@ export default async function InvoicesPage() {
           </div>
         </Card>
 
-        <section id="invoice" className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-soft">
+        <section id="invoice" className="print-area overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-soft">
           <div className="bg-brand-black p-5 text-white sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-5">
               <div className="flex items-center gap-4">

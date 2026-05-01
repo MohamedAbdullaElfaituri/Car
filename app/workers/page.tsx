@@ -1,9 +1,10 @@
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Card, ConfirmDeleteButton, Field, inputClass, PrimaryButton, StatusBadge } from "@/components/ui";
+import { Card, Field, inputClass, PrimaryButton, StatusBadge } from "@/components/ui";
+import { DeleteRecordForm } from "@/components/record-actions";
 import { getSettings, getWorkers } from "@/lib/data/queries";
 import { formatCurrency } from "@/lib/format";
-import { createWorkerAction } from "@/app/actions";
+import { createWorkerAction, softDeleteAction, updateWorkerAction } from "@/app/actions";
 
 export default async function WorkersPage() {
   const [workers, settings] = await Promise.all([getWorkers(), getSettings()]);
@@ -48,9 +49,29 @@ export default async function WorkersPage() {
                       <td className="px-3 py-3 font-bold">{formatCurrency(commission, settings.currency)}</td>
                       <td className="px-3 py-3">
                         <div className="flex gap-2">
-                          <button className="rounded-lg border border-zinc-200 px-3 py-2 font-semibold">تعديل</button>
-                          <button className="rounded-lg border border-zinc-200 px-3 py-2 font-semibold">إيقاف</button>
-                          <ConfirmDeleteButton />
+                          <details className="relative">
+                            <summary className="list-none rounded-lg border border-zinc-200 px-3 py-2 font-semibold transition hover:bg-zinc-50">تعديل</summary>
+                            <form action={updateWorkerAction} className="fixed left-4 top-24 z-50 max-h-[calc(100vh-7rem)] w-[min(92vw,360px)] overflow-y-auto space-y-3 rounded-lg border border-zinc-200 bg-white p-3 text-right shadow-lg">
+                              <input type="hidden" name="id" value={worker.id} />
+                              <input name="name" className={inputClass} defaultValue={worker.name} required />
+                              <input name="phone" className={inputClass} defaultValue={worker.phone} />
+                              <input name="commissionRate" type="number" min="0" max="100" className={inputClass} defaultValue={worker.commissionRate} />
+                              <select name="active" className={inputClass} defaultValue={String(worker.active)}>
+                                <option value="true">نشط</option>
+                                <option value="false">متوقف</option>
+                              </select>
+                              <button className="h-10 w-full rounded-lg bg-brand-black font-bold text-white">حفظ التعديل</button>
+                            </form>
+                          </details>
+                          <form action={updateWorkerAction}>
+                            <input type="hidden" name="id" value={worker.id} />
+                            <input type="hidden" name="name" value={worker.name} />
+                            <input type="hidden" name="phone" value={worker.phone} />
+                            <input type="hidden" name="commissionRate" value={worker.commissionRate} />
+                            <input type="hidden" name="active" value={worker.active ? "false" : "true"} />
+                            <button className="rounded-lg border border-zinc-200 px-3 py-2 font-semibold">{worker.active ? "إيقاف" : "تفعيل"}</button>
+                          </form>
+                          <DeleteRecordForm action={softDeleteAction} table="workers" id={worker.id} path="/workers" />
                         </div>
                       </td>
                     </tr>
@@ -75,3 +96,4 @@ export default async function WorkersPage() {
     </AppShell>
   );
 }
+
