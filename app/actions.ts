@@ -19,7 +19,7 @@ async function getManagerId() {
   const admin = createAdminClient();
 
   if (!managerId && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error("No active manager session was found.");
+    return { supabase: null, managerId: null };
   }
 
   if (admin && managerId) {
@@ -33,7 +33,7 @@ async function getManagerId() {
       .maybeSingle();
 
     if (!profile) {
-      throw new Error("Manager profile was not found or is inactive.");
+      return { supabase: null, managerId: null };
     }
   }
 
@@ -128,6 +128,7 @@ export async function createCustomerAction(formData: FormData) {
   if (!parsed.success) return;
 
   const { supabase, managerId } = await getManagerId();
+  if (!supabase) return;
   await supabase.from("customers").insert({ ...parsed.data, created_by: managerId });
   clearDataCache();
   revalidatePath("/customers");
@@ -144,6 +145,7 @@ export async function updateCustomerAction(formData: FormData) {
   if (!id || !parsed.success) return;
 
   const { supabase } = await getManagerId();
+  if (!supabase) return;
   await supabase
     .from("customers")
     .update({ ...parsed.data, updated_at: new Date().toISOString() })
@@ -164,6 +166,7 @@ export async function createVehicleAction(formData: FormData) {
   if (!parsed.success) return;
 
   const { supabase, managerId } = await getManagerId();
+  if (!supabase) return;
   await supabase.from("vehicles").insert({
     customer_id: parsed.data.customerId,
     plate_number: parsed.data.plateNumber,
@@ -191,6 +194,7 @@ export async function updateVehicleAction(formData: FormData) {
   if (!id || !parsed.success) return;
 
   const { supabase } = await getManagerId();
+  if (!supabase) return;
   await supabase
     .from("vehicles")
     .update({
@@ -218,6 +222,7 @@ export async function createServiceAction(formData: FormData) {
   if (!parsed.success) return;
 
   const { supabase, managerId } = await getManagerId();
+  if (!supabase) return;
   await supabase.from("services").insert({
     name: parsed.data.name,
     price: parsed.data.price,
@@ -243,6 +248,7 @@ export async function updateServiceAction(formData: FormData) {
   if (!id || !parsed.success) return;
 
   const { supabase } = await getManagerId();
+  if (!supabase) return;
   await supabase
     .from("services")
     .update({
@@ -266,6 +272,7 @@ export async function createWorkerAction(formData: FormData) {
   if (!name) return;
 
   const { supabase, managerId } = await getManagerId();
+  if (!supabase) return;
   await supabase.from("workers").insert({
     name,
     phone,
@@ -287,6 +294,7 @@ export async function updateWorkerAction(formData: FormData) {
   if (!id || !name) return;
 
   const { supabase } = await getManagerId();
+  if (!supabase) return;
   await supabase
     .from("workers")
     .update({
@@ -310,6 +318,7 @@ export async function createOrderAction(formData: FormData) {
   const notes = String(formData.get("notes") ?? "");
 
   const { supabase, managerId } = await getManagerId();
+  if (!supabase) return;
   const customerId = await resolveOrderCustomer(formData, supabase, managerId);
   const vehicleId = customerId ? await resolveOrderVehicle(formData, supabase, managerId, customerId) : "";
 
@@ -377,6 +386,7 @@ export async function updateOrderAction(formData: FormData) {
   if (!id || !parsed.success) return;
 
   const { supabase } = await getManagerId();
+  if (!supabase) return;
   const { data: selectedServices, error: servicesError } = await supabase
     .from("services")
     .select("id,name,price,duration_minutes")
@@ -426,6 +436,9 @@ export async function updateOrderAction(formData: FormData) {
 export async function updateSettingsAction(_prevState: SettingsActionState, formData: FormData): Promise<SettingsActionState> {
   try {
     const { supabase, managerId } = await getManagerId();
+    if (!supabase) {
+      return { status: "error", message: "انتهت جلسة الدخول. سجّل الدخول مرة أخرى ثم حاول الحفظ." };
+    }
     const { error } = await supabase
       .from("settings")
       .upsert({
@@ -464,6 +477,7 @@ export async function softDeleteAction(formData: FormData) {
   if (!allowed.includes(table) || !id) return;
 
   const { supabase } = await getManagerId();
+  if (!supabase) return;
   const deletedAt = new Date().toISOString();
   await supabase.from(table).update({ deleted_at: deletedAt }).eq("id", id).is("deleted_at", null);
 
