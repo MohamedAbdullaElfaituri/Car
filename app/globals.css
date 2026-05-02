@@ -11,6 +11,11 @@
   box-sizing: border-box;
 }
 
+html {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
 body {
   margin: 0;
   background: #f7f7f8;
@@ -28,6 +33,13 @@ textarea {
   @page {
     margin: 12mm;
     size: A4;
+  }
+
+  *,
+  *::before,
+  *::after {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
   .no-print {
@@ -51,11 +63,49 @@ textarea {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
-    border: 0 !important;
+    border: 1px solid #e4e4e7 !important;
     box-shadow: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
 
   .print-area table {
     min-width: 0 !important;
+  }
+
+  .print-area .bg-brand-black {
+    background-color: #111111 !important;
+    color: #ffffff !important;
+  }
+
+  .print-area .bg-brand-red {
+    background-color: #d71920 !important;
+    color: #ffffff !important;
+  }
+
+  .print-area .bg-red-50 {
+    background-color: #fef2f2 !important;
+  }
+
+  .print-area .text-red-800 {
+    color: #991b1b !important;
+  }
+
+  .print-area .bg-zinc-50 {
+    background-color: #fafafa !important;
+  }
+
+  .print-area .bg-white {
+    background-color: #ffffff !important;
+  }
+
+  .print-area .border,
+  .print-area .border-zinc-200 {
+    border-color: #e4e4e7 !important;
+  }
+
+  .print-area img {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 }
