@@ -95,3 +95,80 @@ export type DiagnosticActionState = {
 export async function runActionDiagnostics(_prevState: DiagnosticActionState): Promise<DiagnosticActionState> {
   return { results: await collectDiagnostics() };
 }
+
+export async function runWriteDiagnostics(_prevState: DiagnosticActionState): Promise<DiagnosticActionState> {
+  const results = await collectDiagnostics();
+  const userResult = results.find((result) => result.label === "Auth user");
+  const profileResult = results.find((result) => result.label === "Manager profile");
+
+  if (!userResult?.ok || !profileResult?.ok) {
+    return {
+      results: [
+        ...results,
+        {
+          label: "Write workers",
+          ok: false,
+          detail: "لا يمكن اختبار الكتابة قبل نجاح الجلسة وصف المدير."
+        }
+      ]
+    };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: authData } = await supabase.auth.getUser();
+    const managerId = authData.user?.id ?? null;
+
+    const { data: worker, error: insertError } = await supabase
+      .from("workers")
+      .insert({
+        name: "اختبار تشخيص الحفظ",
+        phone: "diagnostic",
+        commission_rate: 0,
+        active: false,
+        created_by: managerId
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !worker) {
+      return {
+        results: [
+          ...results,
+          {
+            label: "Write workers",
+            ok: false,
+            detail: insertError?.message ?? "Supabase لم يرجع السجل بعد الإضافة."
+          }
+        ]
+      };
+    }
+
+    const { error: cleanupError } = await supabase
+      .from("workers")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", worker.id);
+
+    return {
+      results: [
+        ...results,
+        {
+          label: "Write workers",
+          ok: !cleanupError,
+          detail: cleanupError ? `تمت الإضافة لكن فشل إخفاء سجل الاختبار: ${cleanupError.message}` : "تمت الإضافة والاختبار بنجاح."
+        }
+      ]
+    };
+  } catch (error) {
+    return {
+      results: [
+        ...results,
+        {
+          label: "Write workers",
+          ok: false,
+          detail: error instanceof Error ? error.message : "خطأ غير معروف أثناء اختبار الكتابة."
+        }
+      ]
+    };
+  }
+}

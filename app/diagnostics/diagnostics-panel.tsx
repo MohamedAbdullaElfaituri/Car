@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { runActionDiagnostics, type DiagnosticActionState, type DiagnosticResult } from "./actions";
+import { runActionDiagnostics, runWriteDiagnostics, type DiagnosticActionState, type DiagnosticResult } from "./actions";
 
 const initialState: DiagnosticActionState = {
   results: []
@@ -36,7 +36,9 @@ function ResultRows({ results }: { results: DiagnosticResult[] }) {
 
 export function DiagnosticsPanel({ initialResults }: { initialResults: DiagnosticResult[] }) {
   const [state, formAction, isPending] = useActionState(runActionDiagnostics, initialState);
+  const [writeState, writeFormAction, isWritePending] = useActionState(runWriteDiagnostics, initialState);
   const actionResults = state.results;
+  const writeResults = writeState.results;
 
   return (
     <div className="space-y-4">
@@ -65,6 +67,25 @@ export function DiagnosticsPanel({ initialResults }: { initialResults: Diagnosti
         {actionResults.length ? (
           <div className="mt-4">
             <ResultRows results={actionResults} />
+          </div>
+        ) : null}
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">فحص الكتابة</h2>
+          <form action={writeFormAction}>
+            <button disabled={isWritePending} className="h-10 rounded-lg bg-brand-red px-4 text-sm font-bold text-white disabled:bg-zinc-400">
+              {isWritePending ? "جار اختبار الحفظ..." : "اختبار إضافة عامل"}
+            </button>
+          </form>
+        </div>
+        <p className="mt-2 text-sm text-zinc-500">
+          يضيف هذا الاختبار عامل مؤقت ثم يخفيه مباشرة، حتى نتأكد أن الإضافة والحذف يعملان فعلا.
+        </p>
+        {writeResults.length ? (
+          <div className="mt-4">
+            <ResultRows results={writeResults} />
           </div>
         ) : null}
       </section>
