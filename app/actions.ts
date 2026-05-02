@@ -13,9 +13,14 @@ export type SettingsActionState = {
 
 async function getManagerId() {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const managerId = data.user?.id ?? null;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const { data: authData } = await supabase.auth.getUser();
+  const managerId = authData.user?.id ?? sessionData.session?.user.id ?? null;
   const admin = createAdminClient();
+
+  if (!managerId && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error("No active manager session was found.");
+  }
 
   if (admin && managerId) {
     const { data: profile } = await admin
