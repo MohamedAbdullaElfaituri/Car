@@ -272,7 +272,13 @@ alter table public.settings enable row level security;
 alter table public.audit_logs enable row level security;
 
 create policy "manager reads roles" on public.roles for select to authenticated using (public.is_manager());
-create policy "manager manages users" on public.users for all to authenticated using (public.is_manager()) with check (public.is_manager());
+-- Keep the users policy self-contained. Calling public.is_manager() here would
+-- make is_manager() query users while the users policy calls is_manager() again.
+create policy "manager reads own profile" on public.users for select to authenticated
+  using (id = auth.uid() and role = 'manager' and active = true and deleted_at is null);
+create policy "manager updates own profile" on public.users for update to authenticated
+  using (id = auth.uid() and role = 'manager' and active = true and deleted_at is null)
+  with check (id = auth.uid() and role = 'manager' and active = true and deleted_at is null);
 create policy "manager manages workers" on public.workers for all to authenticated using (public.is_manager()) with check (public.is_manager());
 create policy "manager manages customers" on public.customers for all to authenticated using (public.is_manager()) with check (public.is_manager());
 create policy "manager manages vehicles" on public.vehicles for all to authenticated using (public.is_manager()) with check (public.is_manager());

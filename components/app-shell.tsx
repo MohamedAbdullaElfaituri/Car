@@ -87,7 +87,7 @@ export async function AppShell({ children, title, action }: { children: React.Re
           <div className="border-t border-zinc-100 p-4">
             <p className="font-semibold">{user.name}</p>
             <p className="text-sm text-zinc-500">{roleLabels[user.role]}</p>
-            <Link href="/logout" className="mt-3 flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700">
+            <Link href="/logout" prefetch={false} className="mt-3 flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700">
               <LogOut className="h-4 w-4" />
               تسجيل خروج
             </Link>
