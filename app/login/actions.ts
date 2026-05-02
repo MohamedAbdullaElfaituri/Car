@@ -14,7 +14,12 @@ export async function loginAction(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=1");
+    redirect("/login?error=invalid");
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session?.user) {
+    redirect("/login?error=session");
   }
 
   redirect("/dashboard");

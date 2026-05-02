@@ -1,7 +1,20 @@
 import { LockKeyhole, Phone } from "lucide-react";
 import { loginAction } from "./actions";
 
-export default function LoginPage() {
+const errorMessages: Record<string, string> = {
+  invalid: "بيانات الدخول غير صحيحة. تأكد من البريد وكلمة المرور الموجودة في Supabase Authentication.",
+  session: "تم قبول بيانات الدخول لكن الجلسة لم تُحفظ. امسح Cookies للموقع ثم حاول من جديد.",
+  manager: "تم تسجيل الدخول، لكن هذا المستخدم غير مفعّل كمدير في جدول public.users."
+};
+
+type LoginPageProps = {
+  searchParams?: Promise<{ error?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const errorMessage = params?.error ? errorMessages[params.error] : "";
+
   return (
     <main className="min-h-screen bg-brand-black text-white">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-8">
@@ -16,7 +29,13 @@ export default function LoginPage() {
 
           <form action={loginAction} className="rounded-lg bg-white p-5 text-brand-black shadow-soft sm:p-8">
             <h2 className="text-2xl font-bold">تسجيل الدخول</h2>
-            <p className="mt-2 text-sm text-zinc-500">دخول المدير فقط. كلمة المرور تقبل أي قيمة الآن إلى حين ربط Supabase.</p>
+            <p className="mt-2 text-sm text-zinc-500">دخول المدير فقط باستخدام البريد وكلمة المرور المسجلين في Supabase.</p>
+
+            {errorMessage ? (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-800">
+                {errorMessage}
+              </div>
+            ) : null}
 
             <label className="mt-6 block text-sm font-semibold" htmlFor="identifier">
               البريد أو الهاتف
