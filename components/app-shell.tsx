@@ -27,14 +27,17 @@ const navItems: Array<{ href: string; label: string; icon: React.ComponentType<{
 async function getUser() {
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     const supabase = await createClient();
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session?.user) redirect("/login");
+
     const { data: authData } = await supabase.auth.getUser();
-    if (!authData.user) redirect("/login");
+    const currentUser = authData.user ?? sessionData.session.user;
 
     const profileClient = createAdminClient() ?? supabase;
     const { data: profile } = await profileClient
       .from("users")
       .select("id,full_name,role,active")
-      .eq("id", authData.user.id)
+      .eq("id", currentUser.id)
       .is("deleted_at", null)
       .maybeSingle();
 
