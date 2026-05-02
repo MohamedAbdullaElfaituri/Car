@@ -9,6 +9,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  try {
+    new URL(url);
+  } catch {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(url, key, {
