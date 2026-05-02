@@ -6,7 +6,6 @@ import { can, Permission } from "@/lib/permissions";
 import { roleLabels } from "@/lib/format";
 import { Role } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 type StoredUser = {
   id: string;
@@ -33,8 +32,7 @@ async function getUser() {
     const { data: authData } = await supabase.auth.getUser();
     const currentUser = authData.user ?? sessionData.session.user;
 
-    const profileClient = createAdminClient() ?? supabase;
-    const { data: profile } = await profileClient
+    const { data: profile } = await supabase
       .from("users")
       .select("id,full_name,role,active")
       .eq("id", currentUser.id)

@@ -2,11 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { clearDataCache } from "@/lib/data/queries";
 import { customerSchema, orderSchema, serviceSchema, vehicleSchema } from "@/lib/validation";
 
 export type SettingsActionState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
+
+export type WorkerActionState = {
   status: "idle" | "success" | "error";
   message: string;
 };
@@ -16,14 +20,13 @@ async function getManagerId() {
   const { data: sessionData } = await supabase.auth.getSession();
   const { data: authData } = await supabase.auth.getUser();
   const managerId = authData.user?.id ?? sessionData.session?.user.id ?? null;
-  const admin = createAdminClient();
 
   if (!managerId && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return { supabase: null, managerId: null };
   }
 
-  if (admin && managerId) {
-    const { data: profile } = await admin
+  if (managerId) {
+    const { data: profile, error } = await supabase
       .from("users")
       .select("id,role,active")
       .eq("id", managerId)
@@ -32,12 +35,13 @@ async function getManagerId() {
       .is("deleted_at", null)
       .maybeSingle();
 
-    if (!profile) {
+    if (error || !profile) {
+      console.error("Manager profile check failed", error?.message ?? "profile not found");
       return { supabase: null, managerId: null };
     }
   }
 
-  return { supabase: admin ?? supabase, managerId };
+  return { supabase, managerId };
 }
 
 function nullableDate(value: FormDataEntryValue | null) {
@@ -283,6 +287,45 @@ export async function createWorkerAction(formData: FormData) {
   clearDataCache();
   revalidatePath("/workers");
   revalidatePath("/orders");
+}
+
+export async function createWorkerWithFeedbackAction(_prevState: WorkerActionState, formData: FormData): Promise<WorkerActionState> {
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const commissionRate = Number(formData.get("commissionRate") ?? 0);
+  const active = formData.get("active") === "true";
+
+  if (!name) {
+    return { status: "error", message: "اكتب اسم العامل أولا." };
+  }
+
+  const { supabase, managerId } = await getManagerId();
+  if (!supabase || !managerId) {
+    return {
+      status: "error",
+      message: "السيرفر لا يرى جلسة مدير صالحة. سجّل خروج، امسح Cookies، ثم ادخل من جديد. إذا استمرت المشكلة افحص /diagnostics."
+    };
+  }
+
+  const { error } = await supabase.from("workers").insert({
+    name,
+    phone,
+    commission_rate: Math.min(Math.max(commissionRate, 0), 100),
+    active,
+    created_by: managerId
+  });
+
+  if (error) {
+    return { status: "error", message: `Supabase رفض الحفظ: ${error.message}` };
+  }
+
+  clearDataCache();
+  revalidatePath("/workers");
+  revalidatePath("/orders");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
+
+  return { status: "success", message: "تم حفظ العامل بنجاح. إذا لم يظهر فحدّث الصفحة مرة واحدة." };
 }
 
 export async function updateWorkerAction(formData: FormData) {

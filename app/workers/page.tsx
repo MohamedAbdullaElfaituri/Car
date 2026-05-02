@@ -1,10 +1,11 @@
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Card, Field, inputClass, PrimaryButton, StatusBadge } from "@/components/ui";
+import { WorkerCreateForm } from "@/components/worker-create-form";
+import { Card, inputClass, PrimaryButton, StatusBadge } from "@/components/ui";
 import { DeleteRecordForm } from "@/components/record-actions";
 import { getSettings, getWorkers } from "@/lib/data/queries";
 import { formatCurrency } from "@/lib/format";
-import { createWorkerAction, softDeleteAction, updateWorkerAction } from "@/app/actions";
+import { softDeleteAction, updateWorkerAction } from "@/app/actions";
 
 export default async function WorkersPage() {
   const [workers, settings] = await Promise.all([getWorkers(), getSettings()]);
@@ -84,13 +85,7 @@ export default async function WorkersPage() {
 
         <Card>
           <h2 className="text-lg font-bold">إضافة عامل</h2>
-          <form action={createWorkerAction} className="mt-4 space-y-4">
-            <Field label="اسم العامل"><input name="name" className={inputClass} placeholder="اسم العامل" required /></Field>
-            <Field label="رقم الهاتف"><input name="phone" className={inputClass} placeholder="09xxxxxxxx" /></Field>
-            <Field label="نسبة العمولة %"><input name="commissionRate" type="number" min="0" max="100" className={inputClass} placeholder="10" /></Field>
-            <Field label="الحالة"><select name="active" className={inputClass}><option value="true">نشط</option><option value="false">متوقف</option></select></Field>
-            <button className="h-11 w-full rounded-lg bg-brand-black font-bold text-white">حفظ العامل</button>
-          </form>
+          <WorkerCreateForm />
         </Card>
       </div>
     </AppShell>
