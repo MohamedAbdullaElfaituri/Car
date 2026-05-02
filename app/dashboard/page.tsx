@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, MiniBars, PrimaryButton, StatCard, StatusBadge } from "@/components/ui";
-import { getDashboardStats, getSettings } from "@/lib/data/queries";
+import { getDashboardStats, getDataSourceMode, getSettings } from "@/lib/data/queries";
 import { formatCurrency, paymentLabels, statusClass, statusLabels } from "@/lib/format";
 
 export default async function DashboardPage() {
   const [stats, appSettings] = await Promise.all([getDashboardStats(), getSettings()]);
+  const isDemoData = getDataSourceMode() === "demo";
+  const monthName = new Intl.DateTimeFormat("ar-LY", { month: "long" }).format(new Date());
 
   return (
     <AppShell
@@ -18,11 +20,17 @@ export default async function DashboardPage() {
         </PrimaryButton>
       }
     >
+      {isDemoData ? (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+          هذه أرقام تجريبية لأن اتصال Supabase غير مفعّل. عند تفعيل قاعدة البيانات ستظهر الأرقام الحقيقية فقط.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="إجمالي دخل اليوم" value={formatCurrency(stats.todayIncome, appSettings.currency)} tone="red" />
         <StatCard label="إجمالي دخل الشهر" value={formatCurrency(stats.monthIncome, appSettings.currency)} />
         <StatCard label="عدد السيارات اليوم" value={String(stats.todayCars)} hint="كل الحالات المسجلة اليوم" tone="light" />
-        <StatCard label="عدد السيارات الشهر" value={String(stats.monthCars)} hint="إجمالي معاملات أبريل" tone="light" />
+        <StatCard label="عدد السيارات الشهر" value={String(stats.monthCars)} hint={`إجمالي معاملات ${monthName}`} tone="light" />
         <StatCard label="الخدمات المنجزة" value={String(stats.completedServices)} tone="light" />
         <StatCard label="قيد التنفيذ" value={String(stats.inProgressServices)} tone="light" />
         <StatCard label="أفضل خدمة مبيعاً" value={stats.topService.name} hint={`${stats.topService.soldCount} مرة`} tone="light" />
@@ -64,7 +72,7 @@ export default async function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {stats.latestOrders.map((order) => (
+              {stats.latestOrders.length ? stats.latestOrders.map((order) => (
                 <tr key={order.id} className="border-t border-zinc-100">
                   <td className="px-3 py-3 font-bold">{order.invoiceNumber}</td>
                   <td className="px-3 py-3">{order.customerName}</td>
@@ -75,7 +83,13 @@ export default async function DashboardPage() {
                   <td className="px-3 py-3">{paymentLabels[order.paymentMethod]}</td>
                   <td className="px-3 py-3 font-bold">{formatCurrency(order.total, appSettings.currency)}</td>
                 </tr>
-              ))}
+              )) : (
+                <tr className="border-t border-zinc-100">
+                  <td colSpan={6} className="px-3 py-8 text-center font-semibold text-zinc-500">
+                    لا توجد معاملات مسجلة حتى الآن.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

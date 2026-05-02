@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { clearDataCache } from "@/lib/data/queries";
 import { customerSchema, orderSchema, serviceSchema, vehicleSchema } from "@/lib/validation";
+
+export type SettingsActionState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
 
 async function getManagerId() {
   const supabase = await createClient();
@@ -35,6 +41,7 @@ function nullableDate(value: FormDataEntryValue | null) {
 }
 
 function revalidatePaths(...paths: string[]) {
+  clearDataCache();
   [...new Set(paths)].forEach((path) => revalidatePath(path));
 }
 
@@ -117,6 +124,7 @@ export async function createCustomerAction(formData: FormData) {
 
   const { supabase, managerId } = await getManagerId();
   await supabase.from("customers").insert({ ...parsed.data, created_by: managerId });
+  clearDataCache();
   revalidatePath("/customers");
   revalidatePath("/orders");
 }
@@ -160,6 +168,7 @@ export async function createVehicleAction(formData: FormData) {
     notes: parsed.data.notes,
     created_by: managerId
   });
+  clearDataCache();
   revalidatePath("/vehicles");
   revalidatePath("/orders");
 }
@@ -212,6 +221,7 @@ export async function createServiceAction(formData: FormData) {
     description: parsed.data.description,
     created_by: managerId
   });
+  clearDataCache();
   revalidatePath("/services");
   revalidatePath("/orders");
 }
@@ -258,6 +268,7 @@ export async function createWorkerAction(formData: FormData) {
     active,
     created_by: managerId
   });
+  clearDataCache();
   revalidatePath("/workers");
   revalidatePath("/orders");
 }
@@ -407,27 +418,37 @@ export async function updateOrderAction(formData: FormData) {
   revalidatePaths("/orders", "/dashboard", "/invoices", "/reports", "/workers");
 }
 
-export async function updateSettingsAction(formData: FormData) {
-  const { supabase, managerId } = await getManagerId();
-  await supabase
-    .from("settings")
-    .upsert({
-      id: true,
-      shop_name: String(formData.get("shopName") ?? ""),
-      phone: String(formData.get("phone") ?? ""),
-      address: String(formData.get("address") ?? ""),
-      currency: String(formData.get("currency") ?? "د.ل"),
-      tax_rate: Number(formData.get("taxRate") ?? 0),
-      working_hours: String(formData.get("workingHours") ?? ""),
-      invoice_footer: String(formData.get("invoiceFooter") ?? ""),
-      logo_url: String(formData.get("logoUrl") ?? "/logo.jpeg"),
-      primary_color: String(formData.get("primaryColor") ?? "#d71920"),
-      calculate_worker_commissions: formData.get("calculateWorkerCommissions") === "on",
-      reports_export_enabled: formData.get("reportsExportEnabled") === "on",
-      updated_by: managerId,
-      updated_at: new Date().toISOString()
-    });
-  revalidatePaths("/settings", "/invoices", "/dashboard", "/orders", "/reports");
+export async function updateSettingsAction(_prevState: SettingsActionState, formData: FormData): Promise<SettingsActionState> {
+  try {
+    const { supabase, managerId } = await getManagerId();
+    const { error } = await supabase
+      .from("settings")
+      .upsert({
+        id: true,
+        shop_name: String(formData.get("shopName") ?? ""),
+        phone: String(formData.get("phone") ?? ""),
+        address: String(formData.get("address") ?? ""),
+        currency: String(formData.get("currency") ?? "د.ل"),
+        tax_rate: Number(formData.get("taxRate") ?? 0),
+        working_hours: String(formData.get("workingHours") ?? ""),
+        invoice_footer: String(formData.get("invoiceFooter") ?? ""),
+        logo_url: String(formData.get("logoUrl") ?? "/logo.jpeg"),
+        primary_color: String(formData.get("primaryColor") ?? "#d71920"),
+        calculate_worker_commissions: formData.get("calculateWorkerCommissions") === "on",
+        reports_export_enabled: formData.get("reportsExportEnabled") === "on",
+        updated_by: managerId,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      return { status: "error", message: "تعذر حفظ الإعدادات. راجع اتصال قاعدة البيانات ثم حاول مرة أخرى." };
+    }
+
+    revalidatePaths("/settings", "/invoices", "/dashboard", "/orders", "/reports");
+    return { status: "success", message: "تم حفظ الإعدادات وتحديث الصفحات المرتبطة." };
+  } catch {
+    return { status: "error", message: "تعذر حفظ الإعدادات. تأكد من تسجيل الدخول وصلاحيات المدير." };
+  }
 }
 
 export async function softDeleteAction(formData: FormData) {

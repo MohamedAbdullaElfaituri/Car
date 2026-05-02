@@ -12,8 +12,32 @@ import {
 import { normalizeArabicText } from "@/lib/format";
 import { AppUser, AuditLog, Customer, OrderStatus, PaymentMethod, Service, Setting, Vehicle, WashOrder } from "@/lib/types";
 
+const READ_CACHE_MS = 15_000;
+const readCache = new Map<string, { expiresAt: number; value: Promise<unknown> }>();
+
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
+export function getDataSourceMode() {
+  return hasSupabaseEnv() ? "live" : "demo";
+}
+
+export function clearDataCache() {
+  readCache.clear();
+}
+
+function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const cachedValue = readCache.get(key);
+  if (cachedValue && cachedValue.expiresAt > now) return cachedValue.value as Promise<T>;
+
+  const value = load().catch((error) => {
+    readCache.delete(key);
+    throw error;
+  });
+  readCache.set(key, { expiresAt: now + READ_CACHE_MS, value });
+  return value;
 }
 
 async function getSupabase() {
@@ -33,6 +57,14 @@ function visible<T extends { deletedAt?: string | null }>(items: T[]) {
   return items.filter((item) => !item.deletedAt);
 }
 
+function fallbackList<T extends { deletedAt?: string | null }>(items: T[]) {
+  return hasSupabaseEnv() ? [] : visible(items);
+}
+
+function fallbackWorkers() {
+  return hasSupabaseEnv() ? [] : mockUsers.filter((user) => user.role === "worker");
+}
+
 function mapSettings(row: any): Setting {
   return {
     shopName: text(row.shop_name),
@@ -50,6 +82,10 @@ function mapSettings(row: any): Setting {
 }
 
 export async function getCustomers(): Promise<Customer[]> {
+  return cached("customers", getCustomersUncached);
+}
+
+async function getCustomersUncached(): Promise<Customer[]> {
   const supabase = await getSupabase();
   if (!supabase) return visible(mockCustomers);
 
@@ -59,7 +95,7 @@ export async function getCustomers(): Promise<Customer[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return visible(mockCustomers);
+  if (error || !data) return fallbackList(mockCustomers);
 
   return data.map((row: any) => ({
     id: row.id,
@@ -72,6 +108,10 @@ export async function getCustomers(): Promise<Customer[]> {
 }
 
 export async function getVehicles(): Promise<Vehicle[]> {
+  return cached("vehicles", getVehiclesUncached);
+}
+
+async function getVehiclesUncached(): Promise<Vehicle[]> {
   const supabase = await getSupabase();
   if (!supabase) return visible(mockVehicles);
 
@@ -81,7 +121,7 @@ export async function getVehicles(): Promise<Vehicle[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return visible(mockVehicles);
+  if (error || !data) return fallbackList(mockVehicles);
 
   return data.map((row: any) => ({
     id: row.id,
@@ -97,6 +137,10 @@ export async function getVehicles(): Promise<Vehicle[]> {
 }
 
 export async function getServices(): Promise<Service[]> {
+  return cached("services", getServicesUncached);
+}
+
+async function getServicesUncached(): Promise<Service[]> {
   const supabase = await getSupabase();
   if (!supabase) return visible(mockServices);
 
@@ -106,7 +150,7 @@ export async function getServices(): Promise<Service[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return visible(mockServices);
+  if (error || !data) return fallbackList(mockServices);
 
   return data.map((row: any) => ({
     id: row.id,
@@ -121,15 +165,19 @@ export async function getServices(): Promise<Service[]> {
 }
 
 export async function getWorkers(): Promise<AppUser[]> {
+  return cached("workers", getWorkersUncached);
+}
+
+async function getWorkersUncached(): Promise<AppUser[]> {
   const supabase = await getSupabase();
-  if (!supabase) return mockUsers.filter((user) => user.role === "worker");
+  if (!supabase) return fallbackWorkers();
 
   const [{ data: workers, error }, { data: workerOrders }] = await Promise.all([
     supabase.from("workers").select("id,name,phone,commission_rate,active,deleted_at").is("deleted_at", null).order("created_at", { ascending: false }),
     supabase.from("wash_orders").select("worker_id,total").is("deleted_at", null)
   ]);
 
-  if (error || !workers) return mockUsers.filter((user) => user.role === "worker");
+  if (error || !workers) return fallbackWorkers();
 
   return workers.map((row: any) => {
     const relatedOrders = (workerOrders ?? []).filter((order: any) => order.worker_id === row.id);
@@ -148,6 +196,10 @@ export async function getWorkers(): Promise<AppUser[]> {
 }
 
 export async function getOrders(): Promise<WashOrder[]> {
+  return cached("orders", getOrdersUncached);
+}
+
+async function getOrdersUncached(): Promise<WashOrder[]> {
   const supabase = await getSupabase();
   if (!supabase) return visible(mockOrders);
 
@@ -165,7 +217,7 @@ export async function getOrders(): Promise<WashOrder[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return visible(mockOrders);
+  if (error || !data) return fallbackList(mockOrders);
 
   return data.map((row: any) => ({
     id: row.id,
@@ -200,6 +252,10 @@ export async function getOrders(): Promise<WashOrder[]> {
 }
 
 export async function getSettings(): Promise<Setting> {
+  return cached("settings", getSettingsUncached);
+}
+
+async function getSettingsUncached(): Promise<Setting> {
   const supabase = await getSupabase();
   if (!supabase) return mockSettings;
 
@@ -209,6 +265,10 @@ export async function getSettings(): Promise<Setting> {
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
+  return cached("auditLogs", getAuditLogsUncached);
+}
+
+async function getAuditLogsUncached(): Promise<AuditLog[]> {
   const supabase = await getSupabase();
   if (!supabase) return mockAuditLogs;
 
@@ -218,7 +278,7 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
     .order("created_at", { ascending: false })
     .limit(20);
 
-  if (error || !data) return mockAuditLogs;
+  if (error || !data) return hasSupabaseEnv() ? [] : mockAuditLogs;
 
   return data.map((row: any) => ({
     id: row.id,
@@ -231,6 +291,10 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
 }
 
 export async function getDashboardStats() {
+  return cached("dashboardStats", getDashboardStatsUncached);
+}
+
+async function getDashboardStatsUncached() {
   const [orders, services, workers] = await Promise.all([getOrders(), getServices(), getWorkers()]);
   const now = new Date();
   const todayKey = now.toISOString().slice(0, 10);
@@ -243,8 +307,25 @@ export async function getDashboardStats() {
   const soldCountByService = new Map<string, number>();
   orders.forEach((order) => order.services.forEach((service) => soldCountByService.set(service.name, (soldCountByService.get(service.name) ?? 0) + 1)));
   const servicesWithCounts = services.map((service) => ({ ...service, soldCount: soldCountByService.get(service.name) ?? service.soldCount }));
-  const topService = [...servicesWithCounts].sort((a, b) => b.soldCount - a.soldCount)[0] ?? mockServices[0];
-  const topWorker = [...workers].sort((a, b) => b.transactionsCount - a.transactionsCount)[0] ?? mockUsers.find((user) => user.role === "worker")!;
+  const topService = [...servicesWithCounts].sort((a, b) => b.soldCount - a.soldCount)[0] ?? {
+    id: "empty-service",
+    name: "لا توجد بيانات",
+    price: 0,
+    durationMinutes: 0,
+    active: false,
+    soldCount: 0
+  };
+  const topWorker = [...workers].sort((a, b) => b.transactionsCount - a.transactionsCount)[0] ?? {
+    id: "empty-worker",
+    name: "لا توجد بيانات",
+    phone: "",
+    email: "",
+    role: "worker",
+    active: false,
+    transactionsCount: 0,
+    revenue: 0,
+    commissionRate: 0
+  } satisfies AppUser;
 
   return {
     todayIncome: todayOrders.reduce((sum, order) => sum + order.total, 0),
