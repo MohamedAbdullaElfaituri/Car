@@ -39,7 +39,7 @@ async function getUser() {
       .is("deleted_at", null)
       .maybeSingle();
 
-    if (!profile || profile.role !== "manager" || !profile.active) redirect("/logout");
+    if (!profile || profile.role !== "manager" || !profile.active) redirect("/diagnostics?reason=manager-profile");
 
     return {
       id: profile.id,
